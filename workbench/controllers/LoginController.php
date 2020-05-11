@@ -273,6 +273,9 @@ class LoginController {
             } catch (Exception $e) {
                 WorkbenchContext::get()->release();
                 $this->addError($e->getMessage());
+                if ($_REQUEST['_request_real_errors']) {
+                    $this->addError("Extended message:\n". implode("\n", $_REQUEST['_request_real_errors']));
+                }
                 return;
             }
         } else if ($sessionId && $serverUrl && !($username && $password)) {
