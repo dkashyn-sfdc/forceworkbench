@@ -1013,7 +1013,7 @@ $config["header_internal"] = array(
         "default" => array(),
         "overrideable" => true,
         "dataType" => "array"
-    )
+    );
 
     $config["ignoreHTTPSCertificateIssuesAllowed"] = array(
         "label" => "Allowed to ask to ignore HTTPS cerficate issues",
