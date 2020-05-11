@@ -273,7 +273,7 @@ function handleAllErrors($errno, $errstr, $errfile, $errline, $errcontext) {
     $errorId = basename($errfile, ".php") . "-$errline-" . time();
     workbenchLog(LOG_CRIT, "F",  "measure.fatal=1 " . $errorId . ":$errstr:" . print_r(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), true));
 
-    if (!isset($_REQUEST['_request_real_errors'])) {
+    if (!array_key_exists('_request_real_errors', $_REQUEST)) {
         $request_errors = array();
     } else {
         $request_errors = $_REQUEST['_request_real_errors'];
