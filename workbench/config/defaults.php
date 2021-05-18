@@ -276,6 +276,9 @@ $config["header_LoginOptions"] = array(
     );
 
     $GLOBALS['API_VERSIONS'] = array(
+        "52.0" => "52.0",
+        "51.0" => "51.0",
+        "50.0" => "50.0",
         "49.0" => "49.0",
         "48.0" => "48.0",
         "47.0" => "47.0",
@@ -323,7 +326,7 @@ $config["header_LoginOptions"] = array(
     $config["defaultApiVersion"]  = array(
         "label" => "Default API Version",
         "description" => "Default API version to be used for login. This setting does not affect the API version of the current session. Recommended to choose latest version. Some features may act unexpectedly when using older versions.",
-        "default" => "48.0",
+        "default" => "51.0",
         "overrideable" => true,
         "dataType" => "picklist",
         "valuesToLabels" => $GLOBALS['API_VERSIONS']
@@ -899,8 +902,8 @@ $config["header_Performance"] = array(
     );
 
     // This should never be overrideable by end users; instead, admins SHOULD override default in overrides.php
-    $config["orgIdWhiteList"] = array(
-        "label" => "Organization Id Whitelist",
+    $config["orgIdAllowList"] = array(
+        "label" => "Organization Id Allowlist",
         "description" => "A comma-separated list of organization ids which are the only ones allowed to connect to Workbench.",
         "default" => "",
         "overrideable" => false,
@@ -908,8 +911,8 @@ $config["header_Performance"] = array(
     );
 
     // This should never be overrideable by end users; instead, admins SHOULD override default in overrides.php
-    $config["orgIdBlackList"] = array(
-        "label" => "Organization Id Blacklist",
+    $config["orgIdBlockList"] = array(
+        "label" => "Organization Id Blocklist",
         "description" => "A comma-separated list of organization ids which are not allowed to connect to Workbench.",
         "default" => "",
         "overrideable" => false,
@@ -1005,5 +1008,21 @@ $config["header_internal"] = array(
         "default" => "",
         "overrideable" => false,
         "dataType" => "string"
+    );
+
+    $config["additionalDomainWhitelist"] = array(
+        "label" => "Additional whitelisted domains",
+        "description" => "To add extra domains to whitelist",
+        "default" => array(),
+        "overrideable" => true,
+        "dataType" => "array"
+    );
+
+    $config["ignoreHTTPSCertificateIssuesAllowed"] = array(
+        "label" => "Allowed to ask to ignore HTTPS cerficate issues",
+        "description" => "To ignore HTTPS certificate issues if directed by user",
+        "default" => false,
+        "overrideable" => true,
+        "dataType" => "boolean"
     );
 ?>

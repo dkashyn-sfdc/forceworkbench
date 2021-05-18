@@ -128,6 +128,12 @@ class LoginController {
         } else {
             $pw   = isset($_REQUEST['pw'])  ? $_REQUEST['pw']  : null;
             $sid  = isset($_REQUEST['sid']) ? $_REQUEST['sid'] : null;
+            if (WorkbenchConfig::get()->value("ignoreHTTPSCertificateIssuesAllowed")) {
+                $ignoreHTTPSCertificateIssues = isset($_REQUEST['ignoreHTTPSCertificateIssues'])?
+                    $_REQUEST['ignoreHTTPSCertificateIssues'] : false;
+            } else {
+                $ignoreHTTPSCertificateIssues = false;
+            }
             $serverUrl = $this->buildServerUrl();
 
             // special-cases for UI vs API logins
@@ -137,7 +143,7 @@ class LoginController {
                 $_REQUEST['autoLogin'] = 1;
             }
 
-            $this->processLogin($this->username, $pw, $serverUrl, $sid, $this->startUrl);
+            $this->processLogin($this->username, $pw, $serverUrl, $sid, $this->startUrl, $ignoreHTTPSCertificateIssues);
         }
     }
 
@@ -210,12 +216,12 @@ class LoginController {
     }
 
     private function isAllowedHost($serverUrl) {
-        $domainWhitelist = array(
+        $domainAllowlist = array(
             'salesforce\.com',
             'vpod\.t\.force\.com',
             'cloudforce\.com'
         );
-        foreach ($domainWhitelist as $w) {
+        foreach (array_merge($domainAllowlist, WorkbenchConfig::get()->value("additionalDomainWhitelist")) as $w) {
             if (preg_match('/^https?\:\/\/[\w\.\-_]+\.' . $w . '/', $serverUrl)) {
                 return true;
             }
@@ -223,7 +229,8 @@ class LoginController {
         return false;
     }
 
-    private function processLogin($username, $password, $serverUrl, $sessionId, $actionJump) {
+    private function processLogin($username, $password, $serverUrl, $sessionId, $actionJump,
+                                  $ignoreHTTPSCertificateIssues=false) {
         if ($username && $password && $sessionId) {
             $this->addError('Provide only username and password OR session id, but not all three.');
             return;
@@ -259,12 +266,16 @@ class LoginController {
             $orgId = isset($_REQUEST["orgId"]) ? $_REQUEST["orgId"] : WorkbenchConfig::get()->value("loginScopeHeader_organizationId");
             $portalId = isset($_REQUEST["portalId"]) ? $_REQUEST["portalId"] : WorkbenchConfig::get()->value("loginScopeHeader_portalId");
 
-            WorkbenchContext::establish(ConnectionConfiguration::fromUrl($serverUrl, null, $overriddenClientId));
+            WorkbenchContext::establish(
+                ConnectionConfiguration::fromUrl($serverUrl, null, $overriddenClientId, $ignoreHTTPSCertificateIssues));
             try {
                 WorkbenchContext::get()->login($username, $password, $orgId, $portalId);
             } catch (Exception $e) {
                 WorkbenchContext::get()->release();
                 $this->addError($e->getMessage());
+                if ($_REQUEST['_request_real_errors']) {
+                    $this->addError("Extended message:\n". implode("\n", $_REQUEST['_request_real_errors']));
+                }
                 return;
             }
         } else if ($sessionId && $serverUrl && !($username && $password)) {
@@ -303,25 +314,25 @@ class LoginController {
         // exceptions will be caught by top-level handler
         $userInfo = WorkbenchContext::get()->getUserInfo();
 
-        // do org id whitelist/blacklisting
+        // do org id allowlist/blocklisting
         $orgId15 = substr($userInfo->organizationId,0,15);
-        $orgIdWhiteList = array_map('trim',explode(",",WorkbenchConfig::get()->value("orgIdWhiteList")));
-        $orgIdBlackList = array_map('trim',explode(",",WorkbenchConfig::get()->value("orgIdBlackList")));
+        $orgIdAllowList = array_map('trim',explode(",",WorkbenchConfig::get()->value("orgIdAllowList")));
+        $orgIdBlockList = array_map('trim',explode(",",WorkbenchConfig::get()->value("orgIdBlockList")));
         $isAllowed = true;
-        foreach ($orgIdWhiteList as $allowedOrgId) {
+        foreach ($orgIdAllowList as $allowedOrgId) {
             if ($allowedOrgId === "") {
                 continue;
             } else if ($orgId15 === substr($allowedOrgId,0,15)) {
                 $isAllowed = true;
                 break;
             } else {
-                // there is something on the whitelist that's not us
+                // there is something on the Allowlist that's not us
                 // disallow and keep looking until we find our org id
                 $isAllowed = false;
             }
         }
 
-        foreach ($orgIdBlackList as $disallowedOrgId) {
+        foreach ($orgIdBlockList as $disallowedOrgId) {
             if ($orgId15 ===  substr($disallowedOrgId,0,15)) {
                 $isAllowed = false;
                 break;

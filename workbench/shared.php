@@ -273,6 +273,13 @@ function handleAllErrors($errno, $errstr, $errfile, $errline, $errcontext) {
     $errorId = basename($errfile, ".php") . "-$errline-" . time();
     workbenchLog(LOG_CRIT, "F",  "measure.fatal=1 " . $errorId . ":$errstr:" . print_r(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), true));
 
+    if (!array_key_exists('_request_real_errors', $_REQUEST)) {
+        $request_errors = array();
+    } else {
+        $request_errors = $_REQUEST['_request_real_errors'];
+    }
+    array_push($request_errors, $errstr);
+    $_REQUEST['_request_real_errors'] = $request_errors;
     switch ($errno) {
         case E_PARSE:
         case E_ERROR:
@@ -706,7 +713,7 @@ function crypto_serialize($data) {
 }
 
 function crypto_unserialize($data) {
-    $whitelistClasses = [
+    $allowlistClasses = [
         ApexExecuteFutureTask::class, 
         QueryFutureTask::class, 
         ConnectionConfiguration::class, 
@@ -718,7 +725,7 @@ function crypto_unserialize($data) {
     
     $decryptedData = sodium_crypto_box_open($data, WorkbenchConfig::get()->value("nonce"), WorkbenchConfig::get()->value("sodiumKey"));
     
-    return unserialize($decryptedData, ['allowed_classes' => $whitelistClasses]);
+    return unserialize($decryptedData, ['allowed_classes' => $allowlistClasses]);
 }
 
 function getComparisonOperators() {
